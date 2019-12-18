@@ -1,0 +1,630 @@
+%{
+	#include <stdio.h>
+    #include <string.h>
+    const double XXX = -99.999;
+    const int in_sym = 0;
+    const int in_txt = 1;
+    const int in_fun = 2;
+    
+	int yylex(void);
+	void yyerror(char *);
+	double sym[26];
+	double buf[100];
+	char k[100];
+    char *txt[100] = {NULL};
+    double fun[26];
+    int isDec(int z);
+    int errFlag = 0;// 0 means no errors, 1 means an error
+%}
+
+%union{
+	double dval;
+	int id;
+    char *string;
+}
+%right '='
+%token <id> ID
+%token <dval> NUMBER
+%type <dval> expr
+%type <dval> cond
+%type <dval> eqAssign
+%type <dval> caseStmt
+%token <string> STRING
+%token WHILE IF FOR INT DOUBLE BOOL SWITCH DISP DISPLN TEXT DEF RT 
+%left '+' '-'
+%left '*' '/' '%'
+%nonassoc UMINUS
+%%
+
+s:
+s stmt '\n' 
+|
+;
+
+stmt:
+expr							                    {
+                                                        if (errFlag == 0)
+                                                            printf("Expression result: %g\n", $1);
+                                                        errFlag = 0;
+                                                    }
+| WHILE	'(' cond ')' '{' stmt '}'			        {
+							int op1 = (int)buf[0];
+							int re = (int)buf[1];
+							int op2 = (int)buf[2];
+							int counter = -1;
+
+							if (re == 0){
+								while(op1 >= op2){
+								op1--;
+								counter++;
+								}
+							}else if(re == 1){
+								while(op1 <= op2){
+								op1++;
+								counter++;
+								}
+							}else if (re == 2){
+								while(op1 < op2){
+								op1++;
+								counter++;
+								}
+							}else if (re == 3){
+								while(op1 > op2){
+								op1--;
+								counter++;
+								}
+							}else if (re == 4){
+								while(op1 == op2){
+								op1--;
+								counter++;
+								}
+							}else if (re ==5){
+								while(op1 != op2){
+								if(op1 > op2)
+								   op1--;
+								else
+								   op1++;
+								counter++;
+								}
+							}
+							printf("The counter is: %d\n",counter);
+							} 
+
+
+
+
+
+| IF    '(' cond ')' '{' stmt '}'			        {
+							                            int op1 = (int)buf[0];
+							                            int re = (int)buf[1];
+							                            int op2 = (int)buf[2];
+							                            if($3)
+							                                printf("True\n");
+							                            else
+                                                            printf("False\n");
+                                                    } 
+
+
+| FOR	'(' ID ';' cond ';' expr ')' '{' stmt '}'	{
+                                                        if(isDec($3)== -1)
+                                                            printf("Error: ID is not declared\n");
+                                                        else{
+                                                            int op1 = (int)buf[0];
+                                                            int re = (int)buf[1];
+                                                            int op2 = (int)buf[2];
+                                                            int counter = -1;
+
+                                                            if (re == 0){
+                                                                while(op1 >= op2){
+                                                                op1--;
+                                                                counter++;
+                                                                }
+                                                            }else if(re == 1){
+                                                                while(op1 <= op2){
+                                                                op1++;
+                                                                counter++;
+                                                                }
+                                                            }else if (re == 2){
+                                                                while(op1 < op2){
+                                                                op1++;
+                                                                counter++;
+                                                                }
+                                                            }else if (re == 3){
+                                                                while(op1 > op2){
+                                                                op1--;
+                                                                counter++;
+                                                                }
+                                                            }else if (re == 4){
+                                                                while(op1 == op2){
+                                                                op1--;
+                                                                counter++;
+                                                                }
+                                                            }else if (re ==5){
+                                                                while(op1 != op2){
+                                                                if(op1 > op2)
+                                                                op1--;
+                                                                else
+                                                                op1++;
+                                                                counter++;
+                                                                }
+                                                            }
+                                                            printf("The counter is: %d\n",counter);
+                                                            }
+                                                        }
+                                                        
+| FOR	'(' dec ';' cond ';' expr ')' '{' stmt '}'	{
+							int op1 = (int)buf[0];
+							int re = (int)buf[1];
+							int op2 = (int)buf[2];
+							int counter = -1;
+
+							if (re == 0){
+								while(op1 >= op2){
+								op1--;
+								counter++;
+								}
+							}else if(re == 1){
+								while(op1 <= op2){
+								op1++;
+								counter++;
+								}
+							}else if (re == 2){
+								while(op1 < op2){
+								op1++;
+								counter++;
+								}
+							}else if (re == 3){
+								while(op1 > op2){
+								op1--;
+								counter++;
+								}
+							}else if (re == 4){
+								while(op1 == op2){
+								op1--;
+								counter++;
+								}
+							}else if (re ==5){
+								while(op1 != op2){
+								if(op1 > op2)
+								   op1--;
+								else
+								   op1++;
+								counter++;
+								}
+							}
+							printf("The counter is: %d\n",counter);
+							}
+
+
+
+| SWITCH '(' ID ')' '{' caseStmt '}' 			    {printf("Accepted switch\n");}
+| dec
+| cond
+| eqAssign
+| print
+| func  
+|assign
+| error                                             
+| ;
+
+dec:
+INT ID '=' expr					                    {   
+                                                        if(isDec($2)==-1)
+                                                        {
+                                                            $4 = (int)$4;
+                                                            sym[$2] = $4;
+                                                        }else
+                                                        {
+                                                            printf("Error: ID is already defined\n");
+                                                        }
+                                                    }
+| DOUBLE ID '=' expr					            {   if(isDec($2)==-1)
+                                                        {
+                                                            $4 = (double)$4;
+                                                            sym[$2] = $4;
+                                                        }else
+                                                        {
+                                                            printf("Error: ID is already defined\n");
+                                                        }
+                                                    }
+| BOOL ID '=' cond					                {
+                                                        if(isDec($2)==-1)
+                                                        {
+                                                             sym[$2] = $4;
+                                                        }else
+                                                        {
+                                                            printf("Error: ID is already defined\n");
+                                                        }
+                                                       
+                                                    }
+
+| TEXT ID '=' STRING                                {
+                                                        if(isDec($2)==-1)
+                                                        {
+                                                            txt[$2] = $4;
+                                                            for(int i = 0; i<strlen($4);i++){
+                                                                k[i] = $4[i];
+                                                            }
+                                                        }else
+                                                        {
+                                                            printf("Error: ID is already defined\n");
+                                                        }
+                                                    }
+;
+
+
+print:
+DISP '(' ID ')'                 { int c  = isDec($3);
+                                    if(c == -1)
+                                        printf("ID not declared\n");
+                                    else if (c == in_sym)
+                                        printf("%g",sym[$3]);
+                                    else if (c == in_txt){
+				                        txt[$3] = k;
+                                        printf("%s",txt[$3]);
+					                    for(int i = 0;i<strlen(k);i++){
+					                    k[i] = '\0';
+					                    }
+					                }
+                                }
+|
+DISP '('  STRING  ')'           {$3[strlen($3)-1] = '\0';
+                                printf("%s",$3);}
+|
+DISPLN '(' ID ')'               { int c  = isDec($3);
+                                    if(c == -1)
+                                        printf("ID not declared\n");
+                                    else if (c == in_sym)
+                                        printf("%g\n",sym[$3]);
+                                    else if (c == in_txt){
+				                        txt[$3] = k;
+                                        printf("%s\n",txt[$3]);
+					                    for(int i = 0;i<strlen(k);i++){
+					                    k[i] = '\0';
+					                    }
+					                }
+                                }
+|
+DISPLN '('  STRING  ')'         {$3[strlen($3)-1] = '\0';
+                                printf("%s\n",$3);}
+|
+;
+
+caseStmt: 'case''(' cond ')' ':' '{' stmt '}' ';' casestmt
+| 'case''(' cond ')' ':' '{' stmt '}' ';' 
+|;
+
+expr:
+NUMBER			{$$ = $1;}
+| ID '('parms ')'   {
+                        int c = isDec($1);
+                        if(c == in_fun){
+                            printf("%g\n",fun[$1]);
+                        }else{
+                            printf("ID is not declared -> as a function\n");
+                        }
+                        errFlag = 1;
+                    }   
+| ID			{
+                    if (isDec($1) == in_sym)
+                        $$ = sym[$1];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '+' ID		{
+                    if (isDec($1) == in_sym && isDec($3) == in_sym)
+                        $$ = sym[$1]+sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '-' ID		{
+                    if (isDec($1) == in_sym && isDec($3) == in_sym)
+                        $$ = sym[$1]-sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '*' ID		{
+                    if (isDec($1) == in_sym && isDec($3) == in_sym)
+                        $$ = sym[$1]*sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '/' ID		{
+                    
+                    if (isDec($1) == in_sym && isDec($3) == in_sym)
+                        if(sym[$3] == 0)
+				            yyerror("divide by zero not allowed");
+			            else
+				            $$ = sym[$1]/sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+
+| ID '%' ID		{
+                    if (isDec($1) == in_sym && isDec($3) == in_sym)
+                        $$ = ((int)sym[$1])%((int)sym[$3]);
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+
+| ID '+' expr	{
+                    if (isDec($1) == in_sym)
+                        $$ = sym[$1]+$3;
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '-' expr	{
+                    if (isDec($1) == in_sym)
+                        $$ = sym[$1]-$3;
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '*' expr	{
+                    if (isDec($1) == in_sym)
+                        $$ = sym[$1]*$3;
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| ID '/' expr	{
+                    if (isDec($1) == in_sym)
+                        if($3 == 0)
+				            yyerror("divide by zero not allowed");
+			            else
+				            $$ = sym[$1]/$3;
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }            
+                }
+| ID '%' expr	{    
+                    if (isDec($1) == in_sym)
+                        $$ = ((int)sym[$1])%((int)$3);
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+
+| expr '+' ID	{
+                    if (isDec($3) == in_sym)
+                        $$ = $1+sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| expr '-' ID	{
+                    if (isDec($3) == in_sym)
+                        $$ = $1-sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| expr '*' ID	{
+                    if (isDec($3) == in_sym)
+                        $$ = $1*sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| expr '/' ID	{
+                    if (isDec($3) == in_sym)
+                        if(sym[$3] == 0)
+				            yyerror("divide by zero not allowed");
+			            else
+				            $$ = $1/sym[$3];
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+| expr '%' ID	{
+                    if (isDec($3) == in_sym)
+                        $$ = ((int)$1)%((int)sym[$3]);
+                    else
+                    {
+                        errFlag = 1;
+                        printf("ID is not declared -> as a number\n");
+                    }
+                }
+
+| '-' expr %prec UMINUS	{$$ = -$2;}			             
+| '-' ID %prec UMINUS	{
+                            if(isDec($2)==in_sym)
+                                $$ = -sym[$2];
+                            else
+                            {
+                                errFlag = 1;
+                                printf("ID is not declared -> as a number\n");
+                            }
+                        }			     
+| expr '+' expr		{ $$ = $1 + $3; }
+| expr '-' expr		{ $$ = $1 - $3; }
+| expr '/' expr		{ if($3 == 0)
+				            yyerror("divide by zero not allowed");
+			            else
+				            $$ = $1 / $3; 
+                    }
+| expr '*' expr		{ $$ = $1 * $3; }
+| expr '%' expr		{ $$ = ((int)$1) % ((int)$3); }
+| '(' expr ')'		{ $$ = $2; }
+| eqAssign
+|
+;
+
+eqAssign:
+  ID '+''=' expr	{ 
+                        if (isDec($1) == in_sym)
+                        {
+                            $$ = sym[$1]+$4; sym[$1] = $$;
+                        }
+                        else
+                        {
+                            errFlag = 1;
+                            printf("ID is not declared -> as a number\n");
+                        }
+                    }
+| ID '-''=' expr	{ 
+                        if(isDec($1) == in_sym)
+                        {
+                            $$ = sym[$1]-$4; sym[$1] = $$;
+                        }
+                        else
+                        {
+                            errFlag = 1;
+                            printf("ID is not declared -> as a number\n");
+                        }
+                    }
+| ID '*''=' expr	{ 
+                        if(isDec($1) == in_sym)
+                        {
+                            $$ = sym[$1]*$4; sym[$1] = $$;
+                        }
+                        else
+                        {
+                            errFlag = 1;
+                            printf("ID is not declared -> as a number\n");
+                        }
+                    }
+| ID '/''=' expr	{ 
+                        if(isDec($1) == in_sym)
+                        {
+                            if($4 == 0)
+                                yyerror("divid by zero not allowed");
+                            else
+                            {
+                                $$ = sym[$1]/$4; sym[$1] = $$;
+                            }
+                        }
+                        else
+                        {
+                            errFlag = 1;
+                            printf("ID is not declared -> as a number\n");
+                        }
+                    }
+;
+
+cond:
+expr '>=' expr   {	$$ = ($1>=$3);
+			buf[0] = $1;
+			buf[1] = 0;
+			buf[2] = $3;
+			printf($$?"Condition result: true\n":"Condition result: false\n");} 
+| expr '<=' expr { $$ =($1 <= $3);
+			buf[0] = $1;
+			buf[1] = 1;
+			buf[2] = $3;
+			printf($$?"Condition result: true\n":"Condition result: false\n");} 
+| expr '<'  expr { $$ =($1 < $3);
+		        buf[0] = $1;
+			buf[1] = 2;
+			buf[2] = $3;
+			printf($$?"Condition result: true\n":"Condition result: false\n");} 
+| expr '>'  expr { $$ =($1 > $3);
+			buf[0] = $1;
+			buf[1] = 3;
+			buf[2] = $3;
+			printf($$?"Condition result: true\n":"Condition result: false\n");} 
+| expr '==' expr { $$ =($1 == $3);
+			buf[0] = $1;
+			buf[1] = 4;
+			buf[2] = $3;
+			printf($$?"Condition result: true\n":"Condition result: false\n");} 
+| expr '!=' expr { $$ =($1 != $3);
+			buf[0] = $1;
+			buf[1] = 5;
+			buf[2] = $3;
+			printf($$?"Condition result: true\n":"Condition result: false\n");} 
+
+;
+
+func:
+DEF ID '(' parms ')' '{' stmt RT '(' expr ')' '}'   {
+                                                        if(isDec($2) == -1)
+                                                            fun[$2] = $10;
+                                                        else
+                                                            printf("Error: ID is already defined\n"); 
+                                                    }
+|
+DEF ID '(' parms ')' '{' stmt RT '(' ID ')' '}'    {    
+                                                        if(isDec($2) == -1)
+                                                        {
+                                                            if(isDec($10)==in_sym)
+                                                            {
+                                                                fun[$2] =  sym[$10];
+                                                            }
+                                                            else
+                                                            {
+                                                                errFlag = 1;
+                                                                printf("ID is not declared -> as a number\n");
+                                                            }
+                                                        }else
+                                                            printf("Error: ID is already defined\n");          
+                                                    }
+parms:
+ID ','  parms
+| dec ',' parms
+| ID
+| dec 
+| ;
+
+
+%%
+void yyerror(char *s) {
+    fprintf(stderr, "%s\n", s);
+}
+
+int isDec(int z){
+    if(sym[z] != XXX){
+        return in_sym; // declared in sym
+    }else if (txt[z] != NULL){
+        return in_txt;  // declared in txt
+    }else if (fun[z] != XXX){
+        return in_fun; // declared as integer funcion
+    }else
+        return -1; //not declared
+}
+
+int main(void) {
+    for(int i =0; i<26;i++){
+        sym[i] = XXX;
+        fun[i] = XXX;
+    }
+    yyparse();
+    return 0;
+}

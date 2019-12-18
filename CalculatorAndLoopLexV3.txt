@@ -1,0 +1,40 @@
+%{
+	#include <stdlib.h>
+	void yyerror(char *);
+	#include "y.tab.h"
+	#include <math.h>
+	extern double sym[26];
+%}
+
+%%
+"while"						                {return WHILE;}
+"if"						                {return IF;}
+"for"						                {return FOR;}
+"int"						                {return INT;}
+"double"					                {return DOUBLE;}
+"bool"						                {return BOOL;}
+"switch"					                {return SWITCH;}
+"case"					                	{return *yytext;}
+"displn"                                    {return DISPLN;}
+"disp"                                      {return DISP;}
+"text"								        {return TEXT;}
+"def"										{return DEF;}
+"return"									{return RT;}
+
+([0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?)	{yylval.dval = atof(yytext); 
+						                    return NUMBER;}
+
+[a-z][a-z0-9_]*				            	{yylval.id = *yytext - 'a';
+						                    return ID;}
+                                            
+[-+=/*%<>{}();,:\n]|==|<=|>=|!=			    {return *yytext;}
+[ \t]						                ; /* skip whitespace */
+
+\".+\"                                      {yylval.string = yytext;
+                                            return STRING;}
+.					                    	yyerror("invalid character");
+%%
+
+int yywrap(void) {
+return 1;
+}
